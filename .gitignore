@@ -1,0 +1,6 @@
+skills/
+.claude/
+.codex/
+dist/
+tmp/
+.DS_Store
