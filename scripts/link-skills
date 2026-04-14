@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  echo "Usage: $0 <skills-dir>"
+}
+
+if [ "$#" -ne 1 ]; then
+  usage
+  exit 1
+fi
+
+TARGET_ROOT="$(pwd)"
+SOURCE_ARG="$1"
+
+if [ ! -d "$SOURCE_ARG" ]; then
+  echo "Error: skills directory not found at $SOURCE_ARG"
+  exit 1
+fi
+
+SOURCE_DIR="$(cd "$SOURCE_ARG" && pwd)"
+
+ensure_dir() {
+  local dir="$1"
+
+  if [ -L "$dir" ] && [ ! -d "$dir" ]; then
+    rm "$dir"
+    echo "Removed blocking symlink: $dir"
+  elif [ -e "$dir" ] && [ ! -d "$dir" ]; then
+    rm -f "$dir"
+    echo "Removed blocking file: $dir"
+  fi
+
+  mkdir -p "$dir"
+}
+
+link_skill() {
+  local skill_dir="$1"
+  local target_dir="$2"
+  local skill_name
+  local link_path
+  local current_target
+
+  skill_name="$(basename "$skill_dir")"
+  link_path="$target_dir/$skill_name"
+
+  if [ -L "$link_path" ]; then
+    current_target="$(readlink "$link_path")"
+    if [ "$current_target" = "$skill_dir" ]; then
+      echo "Already linked: $link_path"
+      return
+    fi
+    rm "$link_path"
+  elif [ -e "$link_path" ]; then
+    echo "Warning: $link_path exists and is not a symlink, skipping"
+    return
+  fi
+
+  ln -s "$skill_dir" "$link_path"
+  echo "Linked $skill_name -> $link_path"
+}
+
+ensure_dir "$TARGET_ROOT/.claude"
+ensure_dir "$TARGET_ROOT/.codex"
+ensure_dir "$TARGET_ROOT/.claude/skills"
+ensure_dir "$TARGET_ROOT/.codex/skills"
+
+linked_count=0
+
+for skill_dir in "$SOURCE_DIR"/*; do
+  [ -d "$skill_dir" ] || continue
+
+  for target_dir in "$TARGET_ROOT/.claude/skills" "$TARGET_ROOT/.codex/skills"; do
+    link_skill "$skill_dir" "$target_dir"
+  done
+
+  linked_count=$((linked_count + 1))
+done
+
+if [ "$linked_count" -eq 0 ]; then
+  echo "Warning: no skill directories found in $SOURCE_DIR"
+fi
+
+echo "Done."
