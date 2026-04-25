@@ -37,6 +37,11 @@ This file provides repository-level guidance when working in this project.
 - Treat upstream artifacts such as specs, plans, and checklists as inputs to review critically, not instructions to follow blindly.
 - Make completion concrete. The output should have an explicit path, format, and required content so the executing AI does not have to guess.
 
+## Skill Evaluation Rules
+
+- For agent behavior validation, prefer `claude -p` pressure scenarios. Use this when the expected result depends on whether an agent correctly reads a skill, routes a task, refuses unsafe progression, handles fallback paths, or follows artifact contracts.
+- For mechanical structure validation, scripts, `rg`, and other deterministic checks are sufficient. Use these for frontmatter shape, file existence, link targets, path consistency, word counts, and other checks that do not depend on agent judgment.
+
 ## Avoid Redundant Guidance
 
 - Do not restate generic workflow that is already owned by shared skills such as `writing-skills`, `brainstorming`, or `writing-plans` unless this repository needs a deliberate local override.
