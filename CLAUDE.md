@@ -32,6 +32,7 @@ This file provides repository-level guidance when working in this project.
 - Treat user requirements as input to transform, not text to transcribe. Do not copy phrases like "this skill should..." into `SKILL.md`.
 - Write `SKILL.md` as an execution script for another AI: what to inspect, what to do, what to check, when to stop, and what to output.
 - Keep control flow in `SKILL.md`; keep heavy reference material in `references/` and load it only when needed.
+- Do not overfit `SKILL.md` to a pressure scenario's wording, a failing prompt's literal phrasing, or an agent's failed reply pattern. Fix the abstract rule, boundary, go/no-go condition, or artifact contract that the failure exposed; do not turn the skill into an answer key for one test case.
 - Make the executing AI's role explicit: what it may decide on its own, what must be confirmed with the human, and what belongs to adjacent skills instead.
 - Define boundaries and handoffs explicitly. State when the skill must pause, escalate, or route to another skill instead of improvising.
 - Treat upstream artifacts such as specs, plans, and checklists as inputs to review critically, not instructions to follow blindly.
@@ -41,6 +42,9 @@ This file provides repository-level guidance when working in this project.
 
 - For agent behavior validation, prefer `claude -p` pressure scenarios. Use this when the expected result depends on whether an agent correctly reads a skill, routes a task, refuses unsafe progression, handles fallback paths, or follows artifact contracts.
 - For mechanical structure validation, scripts, `rg`, and other deterministic checks are sufficient. Use these for frontmatter shape, file existence, link targets, path consistency, word counts, and other checks that do not depend on agent judgment.
+- Treat a pressure scenario as the behavioral contract by default. If a scenario fails and the scenario itself is not clearly wrong, contradictory, or built on a bad fixture, fix the skill first rather than weakening the scenario.
+- Only change a pressure scenario when the scenario has a concrete defect: it contradicts the skill contract, checks behavior the skill never claimed to own, depends on an invalid fixture, or encodes an obviously incorrect expectation.
+- After changing a skill in response to a failed pressure scenario, rerun the failing scenario and at least one adjacent non-failing scenario to confirm the fix generalizes and does not merely teach the agent to pass one prompt.
 
 ## Avoid Redundant Guidance
 
