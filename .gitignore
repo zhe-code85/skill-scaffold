@@ -4,3 +4,12 @@ skills/
 dist/
 tmp/
 .DS_Store
+
+!workspace/
+!workspace/.claude/
+!workspace/.claude/settings.json
+!workspace/.claude/skills/
+!workspace/.claude/skills/.gitkeep
+!workspace/*/.claude/
+!workspace/*/.claude/settings.json
+!workspace/*/.claude/skills

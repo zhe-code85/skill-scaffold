@@ -65,6 +65,15 @@ ensure_dir "$TARGET_ROOT/.codex"
 ensure_dir "$TARGET_ROOT/.claude/skills"
 ensure_dir "$TARGET_ROOT/.codex/skills"
 
+# Remove all old symlinks under .claude/skills and .codex/skills
+for target_dir in "$TARGET_ROOT/.claude/skills" "$TARGET_ROOT/.codex/skills"; do
+  for entry in "$target_dir"/*; do
+    [ -L "$entry" ] || continue
+    rm "$entry"
+    echo "Removed old symlink: $entry"
+  done
+done
+
 linked_count=0
 
 for skill_dir in "$SOURCE_DIR"/*; do
