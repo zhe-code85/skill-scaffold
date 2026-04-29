@@ -4,39 +4,45 @@ This file provides repository-level guidance when working in this project.
 
 ## Project Focus
 
-- This project is a scaffold for developing, validating, and evolving an RTL phased skill system.
-- Focus on phase boundaries, routing logic, artifact contracts, fallback paths, and re-entry rules.
+- This project is a skill development scaffold for authoring, validating, and evolving runtime AI skills.
+- Focus on skill boundaries, routing logic, artifact contracts, fallback paths, re-entry rules, and eval evidence.
 - Deliverables should remain portable across Claude Code and Codex unless the user explicitly asks for a platform-specific result.
 - Default to Chinese unless the user asks for another language.
 
-## Current Repository Layout
+## Repository Contract
 
 - Use the `writing-skills` skill when creating, updating, validating, or evaluating skill definitions.
-- `skills/` is the source repository for in-development skills and is maintained as an independent git repository.
-- Root `.claude/` and `.codex/` are for the scaffold project's own agents, not for skill testing.
-- Use `claude -p` for live skill evaluation.
-- `workspace/` is the shared, general-purpose root for skill testing workspaces. Use it as the standard replacement for legacy skill-specific workspace directories such as `using-rtl-powers-workspace/`.
-- Inside `workspace/`, keep shared Claude runtime assets under `workspace/.claude/`, and place each evaluation case directly under `workspace/` with a clear, stable case directory name.
-- Do not expose `workspace/.claude/` to a case via a whole-directory `.claude` symlink. This setup has produced unstable `claude -p` behavior in local evaluation.
-- Each `workspace/<case_name>/` must contain a real local `.claude/` directory.
-- Inside each case-local `.claude/`, copy `settings.json` from `workspace/.claude/settings.json` unless the case needs an explicit override, and expose shared skills via a `skills -> ../../.claude/skills` symlink.
-- Create `workspace/` if it does not already exist. The directory structure is:
+- `skills/` is the source repository for in-development runtime skills. A directory under `skills/` is a runtime skill only if it contains `SKILL.md`.
+- `evals/` is the source repository for skill evaluation metadata, including pressure scenarios and the cross-suite evidence registry.
+- `workspace/evals/<YYYYMMDD>/` is the standard root for new live eval runs and their evidence.
+- Root `.claude/` and `.codex/` belong to scaffold agents, not skill evals.
+- Historical evidence under `work/results/evals/<date>/` remains valid. Do not bulk-migrate legacy evidence unless the user explicitly asks.
+- Do not place non-skill eval metadata under `skills/`, and do not maintain a manual runtime skill allowlist.
+
+## Eval Workspace Contract
+
+- Each eval case must run from an isolated case directory under the dated eval root.
+- Each case must have a real local `.claude/` directory with an isolation `settings.json` and a generated `skills` symlink to the project `skills/` source tree.
+- Case-local `settings.json` is required to reduce contamination from user-level plugins, MCP, project MCP, and ambient Claude configuration.
+- Do not expose the scaffold root `.claude/` or a dated root `.claude/` to a case via whole-directory symlink.
+- Keep case names stable and descriptive; do not create unnecessary nesting.
+- The standard eval layout is:
 
 ```text
 workspace/
-    .claude/                    # Shared Claude runtime assets
-        settings.json           # Shared settings template for case-local .claude directories
-        skills/                 # Shared Claude Code skills directory
-            skill_name1         # Symlink 1 to a skill from the `skills/` source repository
-            skill_name2         # Symlink 2 to a skill from the `skills/` source repository
-    case_name/                  # One isolated workspace per evaluation case
-        .claude/                # Real case-local Claude configuration directory
-            settings.json       # Case-local copy of workspace/.claude/settings.json
-            skills -> ../../.claude/skills
+    evals/
+        YYYYMMDD/
+            claude_settings.json        # Required isolation settings template for case-local .claude directories
+            manifest.md                 # Daily eval execution table
+            regression_summary.md       # Daily regression summary when applicable
+            CASE_result_file.md         # One result-file per scenario when evidence is available
+            case_name/                  # One isolated workspace per evaluation case
+                .claude/                # Real case-local Claude configuration directory
+                    settings.json       # Case-local isolation settings copied from claude_settings.json
+                    skills -> <relative path to project skills/>
+                docs/
+                logs/
 ```
-
-- Before live skill testing, ensure the latest skills from the `skills/` source repository are symlinked into `workspace/.claude/skills/`.
-- Manage case directories through naming rather than extra nesting. Prefer stable names such as `eval-1-ambiguous-entry`, `eval-2-module-first`, or `case-uart-subsystem-entry`.
 
 ## Role Separation
 
@@ -44,35 +50,49 @@ workspace/
 |----------|--------------|----------------|--------------------|
 | `CLAUDE.md` | Scaffold-agent guidance | Repository conventions, authoring policy, and testing environment rules | Per-skill runtime instructions or copied user intent |
 | User conversation | Intent source | Requirements, corrections, approvals, and missing context | Reusable process rules |
-| `skills/` | Skill source repository | In-development skill definitions | Scaffold-agent policy or test-only setup |
+| `skills/` | Skill source repository | In-development skill definitions | Scaffold-agent policy, test-only setup, or eval metadata |
+| `evals/` | Skill eval metadata | Pressure scenario definitions and cross-suite evidence registry | Runtime skill instructions or symlinks into `.claude/skills/` |
 | `skills/<skill-name>/SKILL.md` | Runtime guide for the AI executing that skill | Control flow, boundaries, checks, outputs, and direct "you should..." instructions | Repository policy, rationale, or copied user wording |
-| `workspace/` | Isolated `claude -p` test workspace | Shared runtime assets under `workspace/.claude/`, real case-local `.claude/` directories, and flat case directories directly under `workspace/` | Source-of-truth skill content or scaffold-agent configuration |
+| `workspace/evals/<YYYYMMDD>/` | Isolated eval run root | Case workspaces, isolation settings, result files, dated manifest, and regression summary | Source-of-truth skill content, scaffold-agent configuration, or unrelated development workspaces |
+
+## Skill Folder Contract
+
+- A skill is a self-contained folder rooted at `skills/<skill-name>/`.
+- Every skill must contain `SKILL.md`.
+- Optional bundled resources belong under `scripts/`, `references/`, and `assets/`.
+- Use `scripts/` for deterministic or repeatedly rewritten logic, `references/` for load-as-needed documentation, and `assets/` for files consumed in outputs rather than context.
+- Keep skill folders lean. Do not add auxiliary process documents such as `README.md`, installation guides, quick references, or changelogs unless the user explicitly asks for them.
+- Use progressive disclosure: keep core workflow and decision logic in `SKILL.md`, move detailed reference material into `references/`, and avoid duplicating the same information in both places.
+- Keep references shallow and discoverable. Reference files should be linked directly from `SKILL.md`; long reference files should include a table of contents.
 
 ## Skill Authoring Rules
 
-- Optimize for the RTL phased skill system first. Local design choices should strengthen phase separation, routing clarity, and cross-skill consistency rather than only improving one isolated skill.
-- Treat user requirements as input to transform, not text to transcribe. Do not copy phrases like "this skill should..." into `SKILL.md`.
-- Write `SKILL.md` as an execution script for another AI: what to inspect, what to do, what to check, when to stop, and what to output.
-- In `SKILL.md`, second-person instructions such as "you should..." address the AI executing that skill, not the scaffold project user.
-- Keep control flow in `SKILL.md`; keep heavy reference material in `references/` and load it only when needed.
-- Do not overfit `SKILL.md` to one prompt or pressure scenario. Fix the abstract rule, boundary, go/no-go condition, or artifact contract instead.
-- Make the executing AI's role, decisions, human-confirmation points, boundaries, and handoffs explicit.
+- Optimize for the skill system as a whole. Local design choices should strengthen phase separation, routing clarity, and cross-skill consistency rather than only improving one isolated skill.
+- Treat user requirements as input to transform, not text to transcribe.
+- Write `SKILL.md` as an execution contract for another AI: what to inspect, what to decide, when to stop, and what to output.
+- `SKILL.md` frontmatter must contain `name` and `description`. Treat `description` as the primary trigger surface.
+- Write `description` in third person, start it with `Use when...`, and describe triggering conditions rather than workflow.
+- Do not summarize the skill's step-by-step process in `description`; keep workflow detail in the body.
+- Do not overfit `SKILL.md` to one prompt, run, or pressure scenario. Fix the abstract rule, boundary, go/no-go condition, or artifact contract.
+- Make the executing AI's role, decisions, human-confirmation points, phase boundaries, and handoffs explicit.
 - Treat upstream artifacts such as specs, plans, and checklists as inputs to review critically, not instructions to follow blindly.
-- Make completion concrete. The output should have an explicit path, format, and required content so the executing AI does not have to guess.
 
 ## Skill Evaluation Rules
 
-- For agent behavior validation, prefer `claude -p` pressure scenarios. Use this when the expected result depends on whether an agent correctly reads a skill, routes a task, refuses unsafe progression, handles fallback paths, or follows artifact contracts.
-- Before running `claude -p`, confirm the Claude environment is free of unrelated skills or MCP integrations that could contaminate the result.
-- Behavioral validation with `claude -p` should run in an isolated environment that loads only the in-development skills under test and the minimum required local configuration.
-- For non-interactive `claude -p` automation that is expected to create or edit files inside an isolated eval workspace, do not rely on the default permission flow. Use an explicit non-interactive permission policy such as `--dangerously-skip-permissions` (preferred for isolated throwaway cases) or another deliberate policy, otherwise the run may block waiting for write approval and surface as a timeout rather than a clear refusal.
-- Do not interpret an empty `stdout`/`stderr` from `claude -p` default text mode as proof that nothing happened. The default `-p` text output may remain silent until a final response is ready. If you need progress visibility or runtime evidence, use `--verbose --output-format stream-json --include-partial-messages`; in the current CLI, `stream-json` under `--print` requires `--verbose`.
-- When comparing an interactive Claude Code run with a `claude -p` run, keep the workspace root and current working directory identical. Differences such as running interactive Claude from `workspace/` but `claude -p` from `workspace/<case_name>/` can change where artifacts are written and can invalidate the comparison.
-- Describe the intended testing workspace and setup rules directly in this file; do not infer the contract from the repository's current checked-in environment state.
-- Do not depend on `scripts/link-skills` as part of the documented skill-testing environment setup.
-- For mechanical structure validation, scripts, `rg`, and other deterministic checks are sufficient. Use these for frontmatter shape, file existence, link targets, path consistency, word counts, and other checks that do not depend on agent judgment.
+- Align skill evals with `superpowers:writing-skills` `RED -> GREEN -> REFACTOR`. `RED` is a failing baseline without the new or fixed skill behavior, `GREEN` is the same scenario passing after the skill change, and `REFACTOR` is closing newly exposed loopholes and rerunning.
+- No new skill or skill edit is methodologically valid without a failing baseline first.
+- Before changing a skill, document the agent's exact baseline behavior, explicit rationalizations, and triggering pressures in the scenario evidence. Fix the skill against those observed failures, not hypothetical ones.
+- For agent behavior validation, prefer `claude -p` pressure scenarios. Use deterministic checks for mechanical structure validation.
+- Run behavioral evals in an isolated case workspace that loads only the project skills and the minimum required local configuration. Case-local `settings.json` is part of this isolation boundary.
+- For non-interactive `claude -p` automation that may create or edit files, use an explicit non-interactive permission policy. A run blocked by write approval is setup noise, not valid behavior evidence.
+- Do not interpret empty default `stdout`/`stderr` as proof that nothing happened. Use verbose or structured output when runtime visibility is part of the evidence.
+- Keep current working directory and runtime setup consistent when comparing interactive and non-interactive Claude runs.
 - Treat a pressure scenario as the behavioral contract unless it is defective, contradictory, or built on an invalid fixture.
 - After changing a skill for a failed pressure scenario, rerun the failing scenario and at least one adjacent non-failing scenario.
+- When an eval is run, write a result-file under `workspace/evals/<YYYYMMDD>/` and update the dated `manifest.md` with scenario ID, suite, result file, status, workspace, and notes.
+- Keep `evals/manifest.md` aligned with current evidence status. Use `result-file` for independent result files, `indirect-result` for evidence covered by another suite, `inline-evidence` for evidence recorded only in a scenario file, and `missing` when no traceable evidence exists.
+- Record both pre-fix failures and post-fix reruns in the same result-file when a scenario drives a skill change; do not overwrite the failure history.
+- Keep `regression_summary.md` for date-level rollups, not as the only evidence for a scenario.
 
 ## Avoid Redundant Guidance
 

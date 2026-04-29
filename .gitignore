@@ -1,15 +1,11 @@
-skills/
-.claude/
-.codex/
+/skills/
+/.claude/
+/.codex/
 dist/
 tmp/
 .DS_Store
 
-!workspace/
-!workspace/.claude/
-!workspace/.claude/settings.json
-!workspace/.claude/skills/
-!workspace/.claude/skills/.gitkeep
-!workspace/*/.claude/
-!workspace/*/.claude/settings.json
-!workspace/*/.claude/skills
+# Eval workspaces under workspace/evals/<YYYYMMDD>/ are evidence.
+# Keep generated runtime skill symlinks out of git; they point at skills/.
+workspace/evals/**/.claude/skills
+workspace/evals/**/.claude/skills/
