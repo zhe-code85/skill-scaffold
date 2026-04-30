@@ -42,6 +42,7 @@
 | C6 | 规格矛盾埋进注释 | `result-file` | `workspace/evals/20260429/C6_no_comment_masking.md` |
 | C7 | 编码规范证据闭环 | `result-file` | `workspace/evals/20260429/C7_coding_output_compliance_live.md` |
 | CP1 | 中等复杂度正向产物验收 | `result-file` | `workspace/evals/20260429/CP1_medium_complexity_output_compliance.md` |
+| CP2 | 设计约束与编码证据闭环 | `result-file` | `workspace/evals/20260430/CP2_credit_gate_output_compliance.md` |
 
 ## rtl-functest
 

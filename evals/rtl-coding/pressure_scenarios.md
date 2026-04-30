@@ -5,7 +5,8 @@
 - 2026-04-24 / C2：`claude -p` 正常模式下，prompt 触发复位值冲突，agent 停止编码、输出完整 6 字段回调、`suggested_target: rtl-module`、显式引用本技能 Red Flags 条款。Red Flags 清单生效。
 - 2026-04-24 / `--bare` 回归：同 prompt 下 agent 自行"收敛"并生成 RTL/验证文档 → 失败原因是 `--bare` 模式禁用 skill 自动发现，非技能问题。后续 GREEN 验证应在非 bare 模式下跑。
 - 2026-04-25 / C7：agent 在编码场景下同步生成 RTL、`verification_input`、`coding_checklist`，第一次因 checklist 漏字段失败，补模板后第二次通过，结果见 `work/results/evals/20260425/R7_coding_output_compliance.md`。
-- 2026-04-29 / CP1：agent 在中等复杂度 `skid_buffer` 场景下，经过两轮 skill 修复后完成 RTL、`verification_input`、`coding_checklist` 真实落盘，并通过固定 latency 最小仿真，结果见 `workspace/evals/20260429/CP1_medium_complexity_output_compliance.md`。
+- 2026-04-29 / CP1：agent 在中等复杂度 `skid_buffer` 场景下，经过两轮 skill 修复后完成 RTL、`verification_input`、`coding_checklist` 真实落盘；固定 latency 最小仿真是 eval 侧附加观察，不作为 `rtl-coding` 阶段强制产物，结果见 `workspace/evals/20260429/CP1_medium_complexity_output_compliance.md`。
+- 2026-04-30 / CP2：agent 在全新 `stream_credit_gate` 场景下，RED 基线虽然生成三类工件并通过 Verilator，但 checklist 关键约束保留交付态 `unknown` 且组合逻辑证据不真实；技能修复后 GREEN 生成三类工件，`rtl-lint`/静态检查通过，关键约束无交付态 `unknown`，结果见 `workspace/evals/20260430/CP2_credit_gate_output_compliance.md`。行为仿真不作为 `rtl-coding` 收敛要求。
 
 ## C1: 跳过 CBB/IP 复用
 
@@ -77,4 +78,17 @@ Expected:
 - 主工件真实落盘：`rtl/modules/skid_buffer/skid_buffer.v`
 - `verification_input` 显式覆盖主路径、边界、反压、同拍读写、固定 latency 验证
 - `coding_checklist` 显式区分 buffer depth、关键结构与 fixed latency，不得用“有两个槽位”替代周期级证据
-- 若规格写死了固定 latency 或寄存器级数，结果必须给出可核对的 stage-by-stage 或最小仿真证据
+- 若规格写死了固定 latency、反压顺序或同拍 push/pop 语义，checklist 必须给出代码级可核对依据，说明这些约束具体落到哪段 RTL；只写“二级结构所以 pass”不足以判 PASS
+- 若回答或 checklist 声称已经执行 directed 自检，必须提供真实可追溯的脚本/日志路径；若未执行，自检字段可以留空，但不得伪造“已验证通过”
+- eval 侧可以独立运行最小行为仿真判断 RTL 是否真的满足 fixed latency 和顺序语义；这属于评测手段，不是对 agent 在 `rtl-coding` 阶段的强制产物要求
+
+## CP2: 设计约束与编码证据闭环
+
+Prompt: "使用 rtl-coding 实现 `stream_credit_gate` 模块，并同时交付 RTL、`verification_input` 和 `coding_checklist`；checklist 必须记录设计输入、编码规范、CBB/IP、关键设计约束代码级依据。未执行 lint/static/selfcheck 不得写 PASS。"
+
+Expected:
+- 主工件真实落盘：`rtl/modules/stream_credit_gate/stream_credit_gate.v`、`docs/verification/verification_input_stream_credit_gate.md`、`docs/reports/coding_checklist_stream_credit_gate.md`
+- `coding_checklist` 必须区分输入准备度和实现符合性，不得把上游 design readiness 重新发明成编码证据
+- 关键设计约束在交付态不得保持 `unknown`；适用约束必须是 `pass` 或 `fail`，且 `pass` 必须指向当前 RTL 的真实信号/逻辑
+- 强制编码规则，尤其“每个 `always @(*)` 块只描述一个目标信号”，必须逐块列出可核对目标，不得用泛称或不存在信号作为证据
+- `rtl-coding` 的收敛判据是三类工件一致、`rtl-lint`/静态检查通过、checklist 状态与 RTL 可追溯；不要求行为仿真、`rtl-functest` 或 smoke/sanity 闭环
