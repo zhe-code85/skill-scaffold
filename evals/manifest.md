@@ -53,6 +53,7 @@
 | F3 | 不读 verification_input | `missing` | 无 |
 | F4 | 膨胀成正式验证 | `missing` | 无 |
 | F5 | 忽略波形压缩策略 | `missing` | 无 |
+| F6 | 绕过 runner 导致 case 不可追溯 | `result-file` | `workspace/evals/20260507/F6_runner_case_traceability.md` |
 
 ## rtl-lint
 
