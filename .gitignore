@@ -1,6 +1,7 @@
 /skills/
 /.claude/
 /.codex/
+.worktrees/
 dist/
 tmp/
 .DS_Store
