@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+PROJECT_ROOT="$ROOT_DIR/workspace/e2e-min-gpio"
+RUN_ID="test_gpio_core_cocotb_verilator_$$"
+INSTANCE_DIR="$PROJECT_ROOT/work/functest/$RUN_ID/case_main_path/seed_1"
+MANIFEST="$INSTANCE_DIR/manifest.json"
+
+read_manifest_field() {
+    local manifest="$1"
+    local field="$2"
+    python3 - "$manifest" "$field" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as f:
+    data = json.load(f)
+
+value = data
+for part in sys.argv[2].split("."):
+    value = value[part]
+print(value)
+PY
+}
+
+bash -lc '
+    set -euo pipefail
+    cd "'"$ROOT_DIR"'"
+    . ./set-verilator
+    cd "'"$PROJECT_ROOT"'"
+    RUN_ID="'"$RUN_ID"'" SIM=verilator tb/cocotb/runners/run_case.sh gpio_core case_main_path 1
+'
+
+if [ ! -f "$MANIFEST" ]; then
+    echo "missing manifest: $MANIFEST" >&2
+    exit 1
+fi
+
+if [ "$(read_manifest_field "$MANIFEST" sim)" != "verilator" ]; then
+    echo "expected SIM=verilator manifest" >&2
+    exit 1
+fi
+
+if [ "$(read_manifest_field "$MANIFEST" runner_kind)" != "cocotb_make" ]; then
+    echo "expected runner_kind=cocotb_make" >&2
+    exit 1
+fi
+
+if [ "$(read_manifest_field "$MANIFEST" status)" != "review_pending" ]; then
+    echo "expected status=review_pending" >&2
+    exit 1
+fi
+
+wave_path="$(read_manifest_field "$MANIFEST" waveform.path)"
+if [ -z "$wave_path" ] || [ ! -f "$wave_path" ]; then
+    echo "expected waveform file recorded in manifest" >&2
+    exit 1
+fi

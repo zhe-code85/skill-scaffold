@@ -1,0 +1,2 @@
+export PATH="$HOME/workspace/cocotb-setup/local/verilator/bin:$PATH"
+export VERILATOR_ROOT="$HOME/workspace/cocotb-setup/local/verilator/share/verilator"

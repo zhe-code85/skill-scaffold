@@ -1,0 +1,32 @@
+SHELL := /bin/bash
+
+PROJECT_ROOT := $(abspath $(CURDIR)/../../..)
+REPO_ROOT := $(abspath $(PROJECT_ROOT)/../..)
+PYTHON_BIN ?= /home/yanzhe/workspace/cocotb-setup/.venv/bin/python
+RUNNER_PY := $(PROJECT_ROOT)/tb/cocotb/runners/run_gpio_core.py
+
+CASE ?= case_main_path
+SEED ?= 1
+OUT ?= $(PROJECT_ROOT)/work/functest/manual
+SIM_BUILD ?= $(OUT)/build
+WAVES_DIR ?= $(OUT)/waves
+COCOTB_RESULTS_FILE ?= $(OUT)/results.xml
+
+.PHONY: all
+
+all:
+	@mkdir -p "$(OUT)/logs" "$(OUT)/review" "$(SIM_BUILD)" "$(WAVES_DIR)"
+	@set -euo pipefail; \
+	if [ "$(SIM)" = "verilator" ]; then \
+		. "$(REPO_ROOT)/set-verilator"; \
+	fi; \
+	export VERILATOR_ROOT="$${VERILATOR_ROOT:-/home/yanzhe/workspace/cocotb-setup/local/verilator/share/verilator}"; \
+	PROJECT_ROOT="$(PROJECT_ROOT)" \
+	OUT="$(OUT)" \
+	SIM_BUILD="$(SIM_BUILD)" \
+	COCOTB_RESULTS_FILE="$(COCOTB_RESULTS_FILE)" \
+	WAVES_DIR="$(WAVES_DIR)" \
+	CASE="$(CASE)" \
+	SEED="$(SEED)" \
+	SIM="$(SIM)" \
+	"$(PYTHON_BIN)" "$(RUNNER_PY)"
