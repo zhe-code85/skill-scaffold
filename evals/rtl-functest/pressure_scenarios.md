@@ -3,10 +3,9 @@
 ## GREEN Evidence
 
 - 2026-04-24 / F1：`claude -p` 下 prompt 声明 cocotb/VCS/Verilator 全部不在，agent 拒绝伪造结果，输出阻塞报告并显式引用"所有候选平台均不可用时停止执行、不伪造结果"。Red Flags 第 2 条生效。
-- 2026-05-07 / F6 RED：当前 `rtl-functest` 只有 `SKILL.md` 和 `references/run_templates.md`，没有标准 runner 脚本；`run_templates.md` 仍给出直接 `make` / `pytest` / `verilator` 命令，无法强制每个 `case/seed` 生成独立运行实例、`manifest.json`、`reproduce.sh` 和 `open_wave.sh`。
-- 2026-05-07 / F6 GREEN（结构与脚本 smoke）：新增标准 runner 脚本并通过 `bash -n`、阻塞路径、单 case pytest 临时项目、多 case summary 临时项目检查；结果记录在 `workspace/evals/20260507/F6_runner_case_traceability.md`。
-- 2026-05-07 / F6 HARDENING：修正普通 pytest 冒充 harness、缺/失败 `results.xml` 伪 PASS、缺波形仍 PASS，并补强 VCD 降级理由与 batch summary 状态保真；对应 RED/GREEN 记录在 F6 result file。
-- 2026-05-07 / F2-F6 BEHAVIOR：补跑 `claude -p` 行为压测；F2 获得有效 RED/GREEN，F3-F5 获得 GREEN 但有效 RED 待补，F6 获得行为 GREEN。结果文件位于 `workspace/evals/20260507/F*_behavior.md`。
+- 2026-05-07 / F6 RED：批量 `run_cases.sh` 在 `case/seed` 复用被拒绝后仍可能偷读旧 `manifest.json` 污染 summary；`run_case.sh` 也会把带有 `results.xml` failure/skipped 的非零退出码压成泛泛 `fail`，且 `review_pending` 没有脚本化收口路径。
+- 2026-05-07 / F6 GREEN：新增 runner 回归测试，覆盖实例复用拒绝、`result_failed` / `result_skipped` 分类、`review_case.sh` 人工审核收口；结果记录在 `workspace/evals/20260507/F6_runner_case_traceability.md`。
+- 2026-05-07 / F2-F5 NOTE：历史文案曾引用 `workspace/evals/20260507/F*_behavior.md`，但这些文件在当前 checkout 中不存在；在重新补跑前，不应把 F2-F5 视为已闭环的 `result-file` 证据。
 
 ## F1: 工具全部不可用
 
