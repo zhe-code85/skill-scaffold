@@ -150,12 +150,17 @@ workspace/
 - Align skill evals with `superpowers:writing-skills` `RED -> GREEN -> REFACTOR`. `RED` is a failing baseline without the new or fixed skill behavior, `GREEN` is the same scenario passing after the skill change, and `REFACTOR` is closing newly exposed loopholes and rerunning.
 - No new skill or skill edit is methodologically valid without a failing baseline first.
 - Before changing a skill, document the agent's exact baseline behavior, explicit rationalizations, and triggering pressures in the scenario evidence. Fix the skill against those observed failures, not hypothetical ones.
-- For agent behavior validation, prefer `claude -p` pressure scenarios. Use deterministic checks for mechanical structure validation.
+- For agent behavior validation, prefer `claude -p` pressure scenarios. If `claude -p` is unavailable or unusable, fall back to `copilot --model gpt-4.1 -p`. Use deterministic checks for mechanical structure validation.
+- When `copilot --model gpt-4.1 -p` is used as a fallback for skill debugging or evals, optimize for reproducibility and isolation rather than flag-for-flag parity with Claude.
 - Run behavioral evals in an isolated case workspace that loads only the project skills and the minimum required local configuration. Case-local `settings.json` is part of this isolation boundary.
-- For non-interactive `claude -p` automation that may create or edit files, use an explicit non-interactive permission policy. A run blocked by write approval is setup noise, not valid behavior evidence.
+- For non-interactive agent automation that may create or edit files, use an explicit non-interactive permission policy. A run blocked by write approval is setup noise, not valid behavior evidence.
+- For Copilot fallback runs, prefer `--no-ask-user`; add `--allow-all-tools` to remove approval noise, and add `--allow-all-paths` only when isolated workspace layout, symlinked skills, or case assets outside the cwd would otherwise block the run.
+- Do not widen the Copilot runtime surface without a scenario need. Avoid `--allow-all-urls` by default, prefer `--disable-builtin-mcps` and an isolated `--config-dir` when ambient user config or MCP state could contaminate evidence, and only use `--available-tools` when the scenario explicitly depends on reduced tool visibility.
 - Do not interpret empty default `stdout`/`stderr` as proof that nothing happened. Use verbose or structured output when runtime visibility is part of the evidence.
-- Keep current working directory and runtime setup consistent when comparing interactive and non-interactive Claude runs.
+- Keep current working directory and runtime setup consistent when comparing interactive and non-interactive runs, including fallback runs executed with `copilot --model gpt-4.1 -p`.
 - Treat a pressure scenario as the behavioral contract unless it is defective, contradictory, or built on an invalid fixture.
+- Behavioral evals that claim execution success, waveform review, log generation, runner integration, or other runtime artifacts must use real tool-produced artifacts. Do not use fake/mock/printf placeholder waveforms, logs, results, or helper outputs as PASS evidence.
+- If a synthetic fixture is used for a narrow structural check, label it explicitly as mechanical/contract-only evidence and do not count it as a full behavioral PASS.
 - After changing a skill for a failed pressure scenario, rerun the failing scenario and at least one adjacent non-failing scenario.
 - When an eval is run, write a result-file under `workspace/evals/<YYYYMMDD>/` and update the dated `manifest.md` with scenario ID, suite, result file, status, workspace, and notes.
 - Keep `evals/manifest.md` aligned with current evidence status. Use `result-file` for independent result files, `indirect-result` for evidence covered by another suite, `inline-evidence` for evidence recorded only in a scenario file, and `missing` when no traceable evidence exists.

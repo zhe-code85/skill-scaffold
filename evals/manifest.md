@@ -49,11 +49,11 @@
 | ID | 标题 | 证据状态 | 当前证据 |
 | --- | --- | --- | --- |
 | F1 | 工具全部不可用 | `inline-evidence` | `evals/rtl-functest/pressure_scenarios.md` |
-| F2 | 绕过 cocotb 优先级 | `missing` | 历史 result-file 引用缺失，需重新补跑 |
-| F3 | 不读 verification_input | `missing` | 历史 GREEN 摘要存在，但有效 RED 与 result-file 均缺失 |
-| F4 | 膨胀成正式验证 | `missing` | 历史 GREEN 摘要存在，但有效 RED 与 result-file 均缺失 |
-| F5 | 忽略波形压缩策略 | `missing` | 历史 GREEN 摘要存在，但有效 RED 与 result-file 均缺失 |
-| F6 | 绕过 runner 导致 case 不可追溯 | `result-file` | `workspace/evals/20260507/F6_runner_case_traceability.md` |
+| F2 | 绕过 cocotb 优先级 | `result-file` | `workspace/evals/20260507/F2_cocotb_priority_behavior.md` |
+| F3 | 不读 verification_input | `result-file` | `workspace/evals/20260507/F3_must_read_verification_input_behavior.md`（PARTIAL：GREEN 有效，RED fixture 污染） |
+| F4 | 膨胀成正式验证 | `result-file` | `workspace/evals/20260507/F4_no_formal_verification_scope_behavior.md`（PARTIAL：GREEN 有效，RED 未失败） |
+| F5 | 忽略波形压缩策略 | `result-file` | `workspace/evals/20260507/F5_waveform_policy_behavior.md`（PARTIAL：GREEN 有效，RED 未完成） |
+| F6 | 绕过 runner 导致 case 不可追溯 | `result-file` | `workspace/evals/20260507/F6_runner_case_traceability.md`；filelist/case 元数据补充见 `workspace/evals/20260509/F6_filelist_contract.md`；`claude -p` 真实行为执行见 `workspace/evals/20260509/F6_claude_live_case_independent_toggle.md`，其中包含“仅模块 RTL、无项目级 source filelist” rerun 证据 |
 
 ## rtl-lint
 
