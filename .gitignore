@@ -1,6 +1,8 @@
 skills/
-.claude/
-.codex/
+.claude/*
+!.claude/settings.json
+.codex/*
+!.codex/config.toml
 dist/
 tmp/
 .DS_Store
