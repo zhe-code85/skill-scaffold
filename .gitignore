@@ -5,4 +5,5 @@ skills/
 !.codex/config.toml
 dist/
 tmp/
+ncs_datasheet/
 .DS_Store
