@@ -1,8 +1,1 @@
-default_permissions = "workspace_no_references"
 
-[permissions.workspace_no_references]
-description = "Workspace access with references denied."
-extends = ":workspace"
-
-[permissions.workspace_no_references.filesystem.":workspace_roots"]
-"references" = "deny"
