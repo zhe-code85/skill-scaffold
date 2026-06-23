@@ -14,17 +14,36 @@
 - `.codex/`：Codex 项目级配置与 skill 链接。
 - `tmp/skill-tests/`：仓库内 CLI 实测运行目录，用于隔离注册待测 skill、保存测试输入输出和产物；该目录属于临时验证区，不提交到版本库。
 
+## 跨平台命令约定
+
+- 执行仓库维护、skill 注册或 CLI 实测命令前，先判断当前运行平台与 shell；POSIX 环境使用 `sh`/`bash` 兼容命令，Windows 环境优先使用 PowerShell 兼容命令。
+- 文档中的路径可以使用 `/` 作为仓库内逻辑路径；实际执行命令时，按当前平台使用合适的路径写法和转义方式，例如 POSIX 使用 `./tmp/skill-tests/...`，PowerShell 使用 `.\tmp\skill-tests\...`。
+- 创建目录、检测命令是否存在、创建链接、删除临时测试目录等操作，都应选择当前平台原生命令；不要在 Windows 环境直接假设可用 `mkdir -p`、`ln -s`、`command -v`、`rm -rf` 等 POSIX 命令。
+- 检测 CLI 是否可用时，POSIX 可使用 `command -v codex`、`command -v claude`；PowerShell 使用 `Get-Command codex -ErrorAction SilentlyContinue`、`Get-Command claude -ErrorAction SilentlyContinue`。
+- 需要枚举待测 skill 时，优先创建目录链接：POSIX 使用 symlink，Windows 使用 SymbolicLink；如果 Windows 当前权限不允许创建 SymbolicLink，可对本地目录使用 Junction，并在测试记录中说明链接类型。若当前平台无法创建可用链接，将对应 case 标记为 `not run` 并说明原因；不要复制 skill 目录来替代链接，除非用户明确要求。
+
 ## 开始前检查
 
 确认 `.claude/skills/skill-creator` 和 `.codex/skills/skill-creator` 都存在，并指向 `references/claude_skills/skills/skill-creator`。
 
-如果缺失，执行：
+如果缺失，按当前平台选择命令创建目录和链接。
+
+POSIX：
 
 ```bash
 mkdir -p .claude/skills .codex/skills
 
 ln -s ../../references/claude_skills/skills/skill-creator .claude/skills/skill-creator
 ln -s ../../references/claude_skills/skills/skill-creator .codex/skills/skill-creator
+```
+
+PowerShell：
+
+```powershell
+New-Item -ItemType Directory -Force -Path .claude\skills, .codex\skills | Out-Null
+
+New-Item -ItemType SymbolicLink -Path .claude\skills\skill-creator -Target ..\..\references\claude_skills\skills\skill-creator
+New-Item -ItemType SymbolicLink -Path .codex\skills\skill-creator -Target ..\..\references\claude_skills\skills\skill-creator
 ```
 
 如果目标路径已存在，不要覆盖；先检查它是否已经正确指向参考仓库。
@@ -40,7 +59,7 @@ ln -s ../../references/claude_skills/skills/skill-creator .codex/skills/skill-cr
 7. CLI 实测必须区分目标平台，并按“CLI 测试目录管理”在仓库内隔离测试目录中枚举待测 skill，避免污染全局技能目录：
    - 测 Codex 平台时，在测试目录创建 `.codex/skills/<skill-name>`，并让它指向仓库内 `skills/<skill-name>`；如果系统支持 `codex exec`，就从该测试目录运行；否则跳过并记录 Codex CLI 未测试。
    - 测 Claude Code 平台时，在测试目录创建 `.claude/skills/<skill-name>`，并让它指向仓库内 `skills/<skill-name>`；如果系统支持 `claude -p`，就从该测试目录运行；否则跳过并记录 Claude Code CLI 未测试。
-   - 使用 symlink 时，先检查目标路径和已有链接，避免覆盖无关文件。
+   - 使用平台兼容链接（POSIX symlink、Windows SymbolicLink 或 Junction）时，先检查目标路径和已有链接，避免覆盖无关文件。
 8. CLI 实测至少区分两类 case：
    - 显式调用测试：prompt 可以写 `Use $<skill-name> ...`，用于验证目标平台能加载并执行该 skill。
    - 隐式触发测试：prompt 不得点名 skill，也不得说“使用这个 skill”，只给真实用户式任务，用于验证目标平台是否会根据 frontmatter `description` 主动选择该 skill。
@@ -49,10 +68,10 @@ ln -s ../../references/claude_skills/skills/skill-creator .codex/skills/skill-cr
 
 ## CLI 测试目录管理
 
-- 所有 Codex 和 Claude Code CLI 实测都必须在仓库根目录下的 `./tmp/skill-tests/` 中进行；不要使用系统 `/tmp`、用户主目录、全局 skill 目录或仓库外的任意目录作为测试工作区。
+- 所有 Codex 和 Claude Code CLI 实测都必须在仓库根目录下的 `./tmp/skill-tests/` 中进行；不要使用系统临时目录（如 POSIX `/tmp`、Windows `%TEMP%`/`$env:TEMP`）、用户主目录、全局 skill 目录或仓库外的任意目录作为测试工作区。
 - 每轮测试创建独立运行目录，命名为 `./tmp/skill-tests/<YYYYMMDD-HHMMSS>-<skill-name>/`。同一轮内按平台和 case 创建子目录，例如 `codex-explicit/`、`codex-implicit/`、`claude-explicit/`、`claude-implicit/`；从对应 case 子目录执行 CLI 命令。
-- 不要复用已有 case 子目录。若目标运行目录或 case 子目录已存在，先换用新的时间戳目录；不要覆盖其中的 prompt、输出、产物或 symlink。
-- 在每个 case 子目录内只注册本次要测的 skill：Codex case 创建 `.codex/skills/<skill-name>`，Claude Code case 创建 `.claude/skills/<skill-name>`，并让它指向仓库内 `skills/<skill-name>`。创建 symlink 前必须检查目标路径和已有路径；若已有路径不是本次需要的正确链接，停止并换用新的 case 子目录。
+- 不要复用已有 case 子目录。若目标运行目录或 case 子目录已存在，先换用新的时间戳目录；不要覆盖其中的 prompt、输出、产物或链接。
+- 在每个 case 子目录内只注册本次要测的 skill：Codex case 创建 `.codex/skills/<skill-name>`，Claude Code case 创建 `.claude/skills/<skill-name>`，并让它指向仓库内 `skills/<skill-name>`。创建链接前必须检查目标路径和已有路径；若已有路径不是本次需要的正确链接，停止并换用新的 case 子目录。
 - 每个 case 子目录至少保存 `prompt.txt`、`command.txt`、`stdout.txt`、`stderr.txt` 和 `result.md`；如测试产生文件，将产物保存在该 case 子目录或其 `artifacts/` 下，并在 `result.md` 中记录相对路径。
 - `result.md` 应记录平台、测试类型、测试目录、skill 注册方式、输入 prompt、执行命令、关键输出、失败信息、产物路径和结论 `passed`、`failed` 或 `not run`。多个 case 的汇总可以写入运行目录根部的 `summary.md`。
 - `tmp/skill-tests/` 是可清理的本地测试区，但不要在汇报前删除本轮测试证据。清理旧目录时，只删除符合本规范命名且确认不再需要复查的运行目录。
