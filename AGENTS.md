@@ -1,38 +1,51 @@
 # Skill 脚手架协作指南
 
-本文件为在本仓库中工作的 AI 编码代理提供协作约定。你是协助用户开发skill的AI 编程助手。
+本仓库用于开发、校验和评估符合 Agent Skills 规范的 skill。你是协助用户开发 skill 的 AI 编程代理。
 
-## 项目定位
+## 1. 项目边界
 
-本仓库用于开发、校验和评估符合 [Agent Skills 规范](https://agentskills.io/specification) 的 skill。
+- `skills/`：本仓库维护的 skill。
+- `references/`：外部参考资料区，禁止读取内容。
+- `.claude/`：Claude Code 项目配置与 skill 链接。
+- `.codex/`：Codex 项目配置与 skill 链接。
+- `tmp/skill-tests/`：CLI 实测目录，不提交版本库。
 
-## 目录结构
+根目录 `references/` 只允许做路径和链接检查，不允许搜索、打开、摘录或依赖其内容。
+`skills/<skill-name>/references/` 属于单个 skill 的资源目录，可按该 skill 指南读取。
 
-- `skills/`：本仓库开发和维护的 skill。
-- `references/`：外部参考资料，包含 Claude Skills 参考仓库。
-- `.claude/`：Claude Code 项目级配置与 skill 链接。
-- `.codex/`：Codex 项目级配置与 skill 链接。
-- `tmp/skill-tests/`：仓库内 CLI 实测运行目录，用于隔离注册待测 skill、保存测试输入输出和产物；该目录属于临时验证区，不提交到版本库。
+## 2. 基本规则
 
-## 跨平台命令约定
+1. 使用中文开发 skill，必要技术名词保留英文。
+2. 只沉淀可复用能力，不写一次性对话背景。
+3. skill 面向 AI agent，正文使用第二人称“你”。
+4. 保持改动聚焦，不顺手重构无关文件。
+5. 简洁优先，避免过度设计。
+6. 新建、修改、评估 skill 时优先遵循 `skill-creator`。
+7. skill 格式、frontmatter、资源目录和正文组织以 `skill-creator` 为准。
+8. 本文件与 `skill-creator` 冲突时，以本文件为准。
 
-- 执行仓库维护、skill 注册或 CLI 实测命令前，先判断当前运行平台与 shell；POSIX 环境使用 `sh`/`bash` 兼容命令，Windows 环境优先使用 PowerShell 兼容命令。
-- 文档中的路径可以使用 `/` 作为仓库内逻辑路径；实际执行命令时，按当前平台使用合适的路径写法和转义方式，例如 POSIX 使用 `./tmp/skill-tests/...`，PowerShell 使用 `.\tmp\skill-tests\...`。
-- 创建目录、检测命令是否存在、创建链接、删除临时测试目录等操作，都应选择当前平台原生命令；不要在 Windows 环境直接假设可用 `mkdir -p`、`ln -s`、`command -v`、`rm -rf` 等 POSIX 命令。
-- 检测 CLI 是否可用时，POSIX 可使用 `command -v codex`、`command -v claude`；PowerShell 使用 `Get-Command codex -ErrorAction SilentlyContinue`、`Get-Command claude -ErrorAction SilentlyContinue`。
-- 需要枚举待测 skill 时，优先创建目录链接：POSIX 使用 symlink，Windows 使用 SymbolicLink；如果 Windows 当前权限不允许创建 SymbolicLink，可对本地目录使用 Junction，并在测试记录中说明链接类型。若当前平台无法创建可用链接，将对应 case 标记为 `not run` 并说明原因；不要复制 skill 目录来替代链接，除非用户明确要求。
+## 3. 启动检查
 
-## 开始前检查
+开始工作前检查：
 
-确认 `.claude/skills/skill-creator` 和 `.codex/skills/skill-creator` 都存在，并指向 `references/claude_skills/skills/skill-creator`。
+```text
+.claude/skills/skill-creator
+.codex/skills/skill-creator
+```
 
-如果缺失，按当前平台选择命令创建目录和链接。
+二者应指向：
+
+```text
+references/claude_skills/skills/skill-creator
+```
+
+只检查链接是否存在和目标是否正确，不读取 `references/` 内容。
+目标已存在时不要覆盖；先确认是否为正确链接。
 
 POSIX：
 
 ```bash
 mkdir -p .claude/skills .codex/skills
-
 ln -s ../../references/claude_skills/skills/skill-creator .claude/skills/skill-creator
 ln -s ../../references/claude_skills/skills/skill-creator .codex/skills/skill-creator
 ```
@@ -41,52 +54,236 @@ PowerShell：
 
 ```powershell
 New-Item -ItemType Directory -Force -Path .claude\skills, .codex\skills | Out-Null
-
 New-Item -ItemType SymbolicLink -Path .claude\skills\skill-creator -Target ..\..\references\claude_skills\skills\skill-creator
 New-Item -ItemType SymbolicLink -Path .codex\skills\skill-creator -Target ..\..\references\claude_skills\skills\skill-creator
 ```
 
-如果目标路径已存在，不要覆盖；先检查它是否已经正确指向参考仓库。
+Windows 无法创建 SymbolicLink 时，可使用 Junction，并在测试记录中说明。不要复制目录替代链接，除非用户明确要求。
 
-## 工作流程
+## 4. 跨平台命令
 
-1. 明确任务类型：判断用户是在创建或修改 skill、优化或评估现有 skill、调整评估流程，还是修改脚手架本身。
-2. 创建、修改、优化或评估 skill 时要使用 `skill-creator`，并优先遵循其中已经定义的创建、编辑、静态校验和 subagent forward-testing 流程；如果 `skill-creator` 的默认建议与本文件冲突，以本文件为准。
-3. 本仓库覆盖 `skill-creator` 的默认 skill 落盘位置：新 skill 必须创建在项目根目录的 `skills/<skill-name>` 下。运行 `skill-creator` 的 `init_skill.py` 时，将输出目录显式设为本仓库的 `./skills`；不要采用 `skill-creator` 默认的 `$CODEX_HOME/skills`、`~/.codex/skills` 或任何全局技能目录。
-4. 编写或修改 skill 前，先分析用户真实意图，确认要沉淀的是可复用能力，而不是某一次对话中的一次性需求；需求不清楚时先向用户澄清。
-5. 需要执行 subagent forward-testing 时，按 `skill-creator` 的 forward-testing 流程执行；不得把当前 agent 的诊断、预期答案或修复思路传给测试 agent。
-6. 完成 skill 修改后，按本仓库的 CLI 实测流程验证 Codex 或 Claude Code 的平台发现、隐式触发或真实 CLI 入口；如果当前系统不支持对应 CLI、命令不可用、未授权或受权限限制，就跳过该平台或 case，并标记为 `not run`，说明未测试原因。
-7. CLI 实测必须区分目标平台，并按“CLI 测试目录管理”在仓库内隔离测试目录中枚举待测 skill，避免污染全局技能目录：
-   - 测 Codex 平台时，在测试目录创建 `.codex/skills/<skill-name>`，并让它指向仓库内 `skills/<skill-name>`；如果系统支持 `codex exec`，就从该测试目录运行；否则跳过并记录 Codex CLI 未测试。
-   - 测 Claude Code 平台时，在测试目录创建 `.claude/skills/<skill-name>`，并让它指向仓库内 `skills/<skill-name>`；如果系统支持 `claude -p`，就从该测试目录运行；否则跳过并记录 Claude Code CLI 未测试。
-   - 使用平台兼容链接（POSIX symlink、Windows SymbolicLink 或 Junction）时，先检查目标路径和已有链接，避免覆盖无关文件。
-8. CLI 实测至少区分两类 case：
-   - 显式调用测试：prompt 可以写 `Use $<skill-name> ...`，用于验证目标平台能加载并执行该 skill。
-   - 隐式触发测试：prompt 不得点名 skill，也不得说“使用这个 skill”，只给真实用户式任务，用于验证目标平台是否会根据 frontmatter `description` 主动选择该 skill。
-9. 每次 CLI 实测都应记录可复查证据：测试平台、测试类型、测试目录、skill 注册方式、输入 prompt、关键输出、产物路径、执行命令、失败信息，以及结论 `passed`、`failed` 或 `not run`；`not run` 必须说明原因。
-10. 汇报结果时说明改了什么、如何验证、哪些平台和 case 已通过、哪些未运行，以及仍有哪些风险或待用户确认的问题。
+执行命令前先判断平台和 shell。
 
-## CLI 测试目录管理
+- POSIX：使用 `sh` / `bash` 兼容命令。
+- Windows：优先使用 PowerShell。
+- 文档路径可用 `/`；实际命令按平台转义。
+- 不要在 Windows 假设 `mkdir -p`、`ln -s`、`command -v`、`rm -rf` 可用。
 
-- 所有 Codex 和 Claude Code CLI 实测都必须在仓库根目录下的 `./tmp/skill-tests/` 中进行；不要使用系统临时目录（如 POSIX `/tmp`、Windows `%TEMP%`/`$env:TEMP`）、用户主目录、全局 skill 目录或仓库外的任意目录作为测试工作区。
-- 每轮测试创建独立运行目录，命名为 `./tmp/skill-tests/<YYYYMMDD-HHMMSS>-<skill-name>/`。同一轮内按平台和 case 创建子目录，例如 `codex-explicit/`、`codex-implicit/`、`claude-explicit/`、`claude-implicit/`；从对应 case 子目录执行 CLI 命令。
-- 不要复用已有 case 子目录。若目标运行目录或 case 子目录已存在，先换用新的时间戳目录；不要覆盖其中的 prompt、输出、产物或链接。
-- 在每个 case 子目录内只注册本次要测的 skill：Codex case 创建 `.codex/skills/<skill-name>`，Claude Code case 创建 `.claude/skills/<skill-name>`，并让它指向仓库内 `skills/<skill-name>`。创建链接前必须检查目标路径和已有路径；若已有路径不是本次需要的正确链接，停止并换用新的 case 子目录。
-- 每个 case 子目录至少保存 `prompt.txt`、`command.txt`、`stdout.txt`、`stderr.txt` 和 `result.md`；如测试产生文件，将产物保存在该 case 子目录或其 `artifacts/` 下，并在 `result.md` 中记录相对路径。
-- `result.md` 应记录平台、测试类型、测试目录、skill 注册方式、输入 prompt、执行命令、关键输出、失败信息、产物路径和结论 `passed`、`failed` 或 `not run`。多个 case 的汇总可以写入运行目录根部的 `summary.md`。
-- `tmp/skill-tests/` 是可清理的本地测试区，但不要在汇报前删除本轮测试证据。清理旧目录时，只删除符合本规范命名且确认不再需要复查的运行目录。
+检测 Claude Code CLI：
 
-## 协作注意事项
+```bash
+command -v claude
+```
 
-- 编写前先问自己用户需求是否想清楚了，不清楚的和用户澄清。
-- 编写时简洁优先，不要过度设计，要化繁为简。
-- 写入任何规则前，先做抽象化检查：
-  1. 这条内容是否对未来同类任务仍然成立？
-  2. 它是否直接告诉 agent 应该做什么、何时做、如何判断完成？
-  3. 是否包含“用户要求/刚才讨论/某工具没定义/我认为”等一次性背景？
-- 保持改动聚焦，不顺手重构无关文件。
-- 你编写的 skill 是给 AI 智能体使用的操作指南。使用第二人称“你”来写，直接告诉智能体在什么情况下做什么、为什么这样做、如何判断完成。
-- 你需要先分析用户真实意图，再写成可复用的 skill 指令。不要把某一次对话中的用户需求硬编码进 skill，除非它们本身就是通用约束，skill 不要写成说明文。
-- 优化修复skill时不要补丁式修复，要做结构化修复。
-- 你应让每个 skill 尽量具备可检查的成功标准。适合自动评估的任务应准备 eval 提示和断言；偏主观的任务也要提供人工评审的关注点。
-- 使用中文开发skill，必要的技术名词保留英文原名。
+```powershell
+Get-Command claude -ErrorAction SilentlyContinue
+```
+
+## 5. 工作流程
+
+### Step 1: 判断任务类型
+
+先判断用户是在：
+
+1. 创建新 skill。
+2. 修改或优化已有 skill。
+3. 评估 skill。
+4. 调整测试流程。
+5. 修改脚手架项目。
+
+需求不清楚时先澄清；需求明确时直接按最终目标推进，不要拆成不必要的阶段方案。
+
+### Step 2: 判断是否应写入 skill
+
+写入前检查：
+
+- 是否对未来同类任务仍成立？
+- 是否能指导 agent 做什么、何时做、如何判断完成？
+- 是否避免了临时路径、临时背景和当前对话细节？
+- 是否比原表达更简洁、歧义更少？
+
+不满足则不要写入，或改写成通用规则。
+
+### Step 3: 创建或修改 skill
+
+新 skill 必须创建在：
+
+```text
+skills/<skill-name>/
+```
+
+禁止创建到：
+
+```text
+$CODEX_HOME/skills
+~/.codex/skills
+任何全局 skill 目录
+```
+
+如果运行 `skill-creator` 的 `init_skill.py`，必须显式指定输出目录为：
+
+```text
+./skills
+```
+
+修改已有 skill 时做结构化修复，优先调整流程、判断标准和资源路由，不做零散补丁式堆叠。
+
+### Step 4: 应用本仓库补充约束
+
+`skill-creator` 已覆盖通用格式和质量要求；本仓库只补充以下约束：
+
+- 不读取根目录 `references/` 内容。
+- 不创建到全局 skill 目录。
+- 不复制 skill 目录替代链接。
+- 不覆盖测试证据。
+- 不汇报未实际执行的验证结果。
+
+## 6. Forward-Testing
+
+需要 subagent forward-testing 时，遵循 `skill-creator` 流程。
+
+要求：
+
+- 不把当前 agent 的诊断、预期答案或修复思路传给测试 agent。
+- 测试 prompt 应模拟真实用户任务。
+- 测试结果应能判断 skill 是否正确触发、执行和产出。
+- 无法执行时记录为 `not run`，并说明原因。
+
+## 7. Claude Code CLI 实测
+
+CLI 实测只针对 Claude Code。
+
+完成 skill 修改后，验证：
+
+1. 平台发现。
+2. 显式调用。
+3. 隐式触发。
+4. 真实 CLI 入口。
+
+如果 `claude -p` 不支持、CLI 不存在、未授权或受权限限制，对应 case 记为 `not run`。
+
+## 8. 测试目录规范
+
+所有 CLI 实测必须放在：
+
+```text
+./tmp/skill-tests/
+```
+
+禁止使用系统临时目录、用户主目录、全局 skill 目录或仓库外目录。
+
+每轮测试目录：
+
+```text
+./tmp/skill-tests/<YYYYMMDD-HHMMSS>-<skill-name>/
+```
+
+case 子目录：
+
+```text
+claude-explicit/
+claude-implicit/
+```
+
+不要复用已有 case 目录；目录存在时换新时间戳，不覆盖旧证据。
+
+## 9. 测试注册方式
+
+每个 case 目录只注册本次待测 skill：
+
+```text
+.claude/skills/<skill-name> -> skills/<skill-name>
+```
+
+创建链接前检查：
+
+1. 目标 skill 是否存在。
+2. 链接路径是否已存在。
+3. 已存在路径是否为本次需要的正确链接。
+
+链接策略：
+
+- POSIX：symlink。
+- Windows：SymbolicLink；失败时可用 Junction，并记录。
+- 不复制 skill 目录，除非用户明确要求。
+
+## 10. 测试 Case
+
+### 显式调用
+
+prompt 可以点名 skill：
+
+```text
+Use $<skill-name> ...
+```
+
+用于验证平台能加载并执行该 skill。
+
+### 隐式触发
+
+prompt 不得点名 skill，也不得说“使用这个 skill”。
+只给真实用户式任务，用于验证平台能否根据 `description` 主动选择 skill。
+
+## 11. 测试证据
+
+每个 case 至少保存：
+
+```text
+prompt.txt
+command.txt
+stdout.txt
+stderr.txt
+result.md
+```
+
+产物保存到 case 目录或：
+
+```text
+artifacts/
+```
+
+`result.md` 必须记录：
+
+- 测试平台
+- 测试类型
+- 测试目录
+- skill 注册方式
+- prompt
+- 执行命令
+- 关键输出
+- 失败信息
+- 产物路径
+- 结论：`passed`、`failed` 或 `not run`
+
+多 case 汇总写入：
+
+```text
+summary.md
+```
+
+## 12. 汇报要求
+
+完成后说明：
+
+1. 改了什么。
+2. 为什么这样改。
+3. 如何验证。
+4. 哪些 Claude Code case 通过。
+5. 哪些 case 未运行及原因。
+6. 剩余风险或待确认问题。
+
+不要声称执行过未实际执行的测试。
+不要在汇报前删除本轮测试证据。
+
+## 13. 禁止事项
+
+禁止：
+
+1. 读取根目录 `references/` 内容。
+2. 把新 skill 创建到全局目录。
+3. 在 Windows 假设 POSIX 命令可用。
+4. 复制 skill 目录替代链接。
+5. 覆盖已有测试证据。
+6. 把当前 agent 的诊断传给 forward-testing agent。
+7. 把一次性需求写进 skill。
+8. 汇报未执行过的验证结果。
