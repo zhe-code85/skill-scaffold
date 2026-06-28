@@ -68,12 +68,12 @@ Get-Command claude -ErrorAction SilentlyContinue
 - 编辑skill时不要过度设计，50字能描述清楚事情不要用200字来描述，不要把skill写成说明文。
 - 优化修复skill时不要补丁式修复，要做结构化修复。
 - skill设计完成后，建立评估手段，确保：
-   - skill能稳定触发
-   - 门禁都能守住
-   - skill流程运转正常
-   - 端到端能完成
+   - skill能稳定触发。
+   - 门禁都能守住。
+   - skill流程运转正常。
+   - skill端到端工作正常。
 - 保持改动聚焦，不顺手重构无关文件。
-- 使用中文开发skill，skill的Metadata Fields、子标题、专业技术名词保留英文原名。
+- 使用中文开发skill，skill的Metadata Fields、子标题、专业技术名词使用英文。
 
 ---
 
