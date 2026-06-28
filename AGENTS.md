@@ -23,6 +23,8 @@
 6. 新建、修改、评估 skill 时优先遵循 `skill-creator`。
 7. skill 格式、frontmatter、资源目录和正文组织以 `skill-creator` 为准。
 8. 本文件与 `skill-creator` 冲突时，以本文件为准。
+9. 用户需求输入时，首先要停下来思考如何转成流程机制，而不是直接写到skill里。
+10. 非必须不要探索项目内全文件
 
 ## 3. 启动检查
 
@@ -132,7 +134,6 @@ $CODEX_HOME/skills
 
 `skill-creator` 已覆盖通用格式和质量要求；本仓库只补充以下约束：
 
-- 不读取根目录 `references/` 内容。
 - 不创建到全局 skill 目录。
 - 不复制 skill 目录替代链接。
 - 不覆盖测试证据。
@@ -279,11 +280,10 @@ summary.md
 
 禁止：
 
-1. 读取根目录 `references/` 内容。
-2. 把新 skill 创建到全局目录。
-3. 在 Windows 假设 POSIX 命令可用。
-4. 复制 skill 目录替代链接。
-5. 覆盖已有测试证据。
-6. 把当前 agent 的诊断传给 forward-testing agent。
-7. 把一次性需求写进 skill。
-8. 汇报未执行过的验证结果。
+1. 把新 skill 创建到全局目录。
+2. 在 Windows 假设 POSIX 命令可用。
+3. 复制 skill 目录替代链接。
+4. 覆盖已有测试证据。
+5. 把当前 agent 的诊断传给 forward-testing agent。
+6. 把一次性需求写进 skill。
+7. 汇报未执行过的验证结果。
