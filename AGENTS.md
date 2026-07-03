@@ -39,6 +39,12 @@ Windows 无法创建 SymbolicLink 时，可使用 Junction，并在测试记录�
 
 如果目标路径已存在，不要覆盖；先检查它是否已经正确指向参考仓库。
 
+## 准备待开发Skill
+
+通过 ```ln -s``` 或者 ```New-Item -ItemType SymbolicLink ``` 把待开发的Skill链接到本目录的skills下。
+在skills\下进行技能开发。
+
+
 ## 跨平台命令
 
 执行命令前先判断平台和 shell。
@@ -57,6 +63,7 @@ command -v claude
 ```powershell
 Get-Command claude -ErrorAction SilentlyContinue
 ```
+
 
 ## Skill 编写与评估硬门禁
 
